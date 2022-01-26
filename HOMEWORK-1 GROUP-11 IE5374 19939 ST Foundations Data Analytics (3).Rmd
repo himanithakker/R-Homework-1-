@@ -1,0 +1,259 @@
+---
+title: "HOMEWORK 1 GROUP 11   IE5374 19939 ST: Foundations Data Analytics"  
+Contribution: (34%-Vidyun AKila Sundhara Raaman, 33%-Shubham Patidar, 33%-Himani Thakker)
+output: pdf_document
+---
+
+**importing dataset**
+```{r}
+library(dplyr)
+library(lubridate)
+library(tidyr)
+library(magrittr)
+library(stringr)
+fm <- read.csv('fm.csv', na.strings = "")         # reading file from the database
+
+```
+
+**Task 1.1**
+Compute the number of farmers market in the United States
+```{r}
+nrow(fm)                                          # provides number of rows and hence number of farmer markets
+```
+
+**Task 1.2**
+Write a code to compute the number of farmers markets by state and arrange
+them in descending order of number of farmers market.
+```{r}
+states <- fm$State                                #extracting all the states in a vector.
+
+unique_find=function(a){                          #creating own function for extracting unique values
+  vec1=vector()
+  
+  c=1
+  for (i in a){
+    if(!(i %in% vec1)){
+      vec1[c]=i
+      c=c+1
+      
+      
+    }
+    
+  }
+  vec1
+    
+}
+
+
+unistate=unique_find(states)                      # creating another object for storing unique states.
+
+vec <- vector()
+
+for (i in 1:length(unistate)){                    # Creating a list to count the occurance of each element in unique
+     c=0
+
+      for( j in 1:length(states))
+
+      {
+
+        if(unistate[i] == states[j])
+
+          {
+
+          c = c+1
+
+          }
+      }
+
+      vec[i]=c
+
+}
+
+df1 <- data.frame(unistate,vec)                   # creating the dataframe to store it
+
+
+sorting=function(a){                              # creating my own sorting function
+
+  vec=vector()
+
+  for (i in 1:length(a)){
+
+    mx=which.max(a)
+
+    vec[i]=mx
+
+    a[mx]=NA
+
+  }
+  vec
+
+}
+
+
+df1[sorting(df1$vec) ,]   
+
+
+```
+
+**Task 1.3**
+Write a code to compute the number of farmers market by cities in
+Massachusetts and display the top five cities.
+```{r}
+df_mass=fm[which(fm$State=="Massachusetts"),]     #Filtering the data      
+
+unicity=unique_find(df_mass$city)                 #Finding the unique values in it
+
+vec <- vector()
+
+
+for (i in 1:length(unicity)){                     #Finding the count of each occurance
+     c=0
+
+      for( j in 1:length(df_mass$city))
+
+      {
+        if(!is.na(unicity[i]) & !is.na(df_mass$city[j])){
+          if(unicity[i] == df_mass$city[j] )
+          {
+
+          c = c+1
+
+          }
+          
+        }
+
+        
+      }
+
+      vec[i]=c
+
+}
+
+df1 <- data.frame(unicity,vec)
+df1[sorting(df1$vec) ,] [1:5,]
+```
+
+**Task 1.4**
+Write a code to show the top 5 states by number of farmers market that offers
+coffee
+```{r}
+
+unistate=unique_find(fm$State)                    #Finding the unique values
+
+v=rep(0,length(unistate))
+
+
+
+for (j in 1:nrow(fm)){                            #Incrementing the count if they match
+  if(!is.na(fm$Coffee[j]) &!is.na(fm$State[j])){
+    
+    if(fm$Coffee[j]=="Y"){
+      
+      ind=which(unistate==fm$State[j])
+      v[ind]=v[ind]+1
+      
+    }
+    
+    
+  }
+
+    
+}
+
+sorting=function(a){                            #Creating my own sorting function
+
+  vec=vector()
+
+  for (i in 1:length(a)){
+
+    mx=which.max(a)
+
+    vec[i]=mx
+
+    a[mx]=NA
+
+  }
+  vec
+
+}
+newdf=data.frame(city=unistate,no_of_market=v)
+
+newdf[sorting(newdf$no_of_market) ,][1:5,]     #Printing the top 5 rows
+  
+
+```
+**Task 2**
+Use the “designation” variable and calculate the number of 20 year old wine in
+the dataset
+```{r}
+wine <- read.csv('wine_data.csv', na.strings = "")
+winedate <- wine$designation
+library(stringr)
+pattern=c("20y","20an","20th")                 # Creating all patterns to match
+winedate=gsub("[[:punct:]]"," ",winedate)      #Removing all unwanted symbols
+winedate=gsub(" ","",winedate)                 #Removing all spaces
+x=grep(paste(pattern,collapse="|"), str_to_lower(winedate), value = TRUE)#Finding all strings which matches the patten
+cat("Number of 20 years old wine are",length(x))
+```
+**Task3**
+Write an R code to extract keyword data from the above file and convert it to a
+weighted adjacency matrix
+```{r}
+keyword <- read.csv("E:/GRAD/fda/hw1/Keyword_data - Keyword_data.csv", header=TRUE,na.strings=NA)
+
+fil_key=keyword%>%select(c("Keyword.1":"Keyword.12")) #Filtering the columns
+fil_key=fil_key[!apply(fil_key == "", 1, all), ] # Removing rows if they have NA in all columns
+
+
+fil_key[fil_key==""]="empty" #Replacing "" with empty  
+
+uni=unname(unlist(fil_key[1,])) #Converting dataframe's row 1 into vector
+
+
+
+c=length(uni)+1 
+
+for (i in 2:nrow(fil_key)){  #Find all unique keywords and store
+  for (j in fil_key[i,]){   
+    if(!(j %in% uni)){        
+      uni[c]=j
+      c=c+1
+      
+      
+      
+    }
+  }
+}
+
+empty_matrix<-matrix(0,length(uni),length(uni)) #create empty matrix of size equals length of unqiue values with 0
+colnames(empty_matrix)=uni #Renaming the column and row names in the matrix
+rownames(empty_matrix)=uni
+
+
+
+for (i in 1:nrow(fil_key)){         #Loop to iterate all articles
+  #print(i)
+  for (j in unname(unlist(fil_key[i,]))){  #Loop to iterate keyword inside each article
+    #print(j)
+    for (k in unname(unlist(fil_key[i,])))  # Loop to iterate keywords to make count
+      {#print(k)
+      if(!(j==k)){
+        #cat(j,k,"\n")
+        empty_matrix[j,k]=empty_matrix[j,k]+1  # Incrementing the count if two keywords are different
+        
+        
+      }
+    }
+  }
+}
+
+z=empty_matrix[rownames(empty_matrix)!="empty", colnames(empty_matrix)!="empty"] #Removing row and column named empty
+
+
+print(z)
+
+```
+
+
+
+
